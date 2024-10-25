@@ -46,10 +46,8 @@ def successor_state(state, action):
     new_grid = list(map(list, state['grid']))
     x, y = state['position']
 
-    # if action == 'Suck' and x < 5 and y < 5:
     if action == 'Suck':
         new_grid[x][y] = 0
-        # new_grid[x-1][y-1] = 0
     elif action == 'Up' and x < 4:
         x += 1
     elif action == 'Down' and x > 1:
@@ -84,46 +82,64 @@ def cost_function(current_state):
 def state_to_tuple(state):
     return (state['position'], state['grid'])
 
-def calc_num_of_dirty_squares_and_min_distance(state):
-    # Initially set min-distance to a large (infinity) value.
-    min_distance = float('inf')
-    num_of_dirty_squares = 0
-
+def calc_dirty_squares(state):
+    dirty_squares = []
     x, y = state['position']
 
+    # Loop through each row and column in the 5x5 grid
     for i in range(5):
         for j in range(5):
+            # Check if the current square is dirty
             if state['grid'][i][j] == 1:
-                num_of_dirty_squares += 1
-                distance = abs((i) - x) + abs((j) - y)
-                min_distance = min(min_distance, distance)
+                dirty_squares.append((i, j ))
 
-    return (num_of_dirty_squares, min_distance)
+    return dirty_squares
+
+def calc_min_distance(state, dirty_squares):
+    x, y = state['position']
+
+    # Calculating minimum distance
+    min_distance_to_dirty_square = None
+
+    # Loop through each dirty square
+    for d in dirty_squares:
+        a, b = d
+
+        # Calculate the Manhattan distance from the agent's position to the dirty square
+        distance = abs(x - a) + abs(y - b)
+
+        # Update the minimum distance if it's the first distance calculated
+        # or if the current distance is smaller than the previously recorded minimum
+        if min_distance_to_dirty_square is None or distance < min_distance_to_dirty_square:
+            min_distance_to_dirty_square = distance
+
+    return min_distance_to_dirty_square
 
 # Admissible Heuristic Fucntion
 def h1(state):
-    num_dirty_squares, min_distance = calc_num_of_dirty_squares_and_min_distance(state)
+    dirty_sqrs = calc_dirty_squares(state)
 
-    # The min-distance will be infinity if there are no dirty squares.
-    # So, we return zero in such case.
-    if num_dirty_squares == 0:
+    if not dirty_sqrs:
         return 0
 
+    min_dist_to_dirty_sqrs = calc_min_distance(state, dirty_sqrs)
+
     # h1 = d + 2 * w(S) - 1
-    return min_distance + 2 * num_dirty_squares - 1
+    return min_dist_to_dirty_sqrs + 2 * len(dirty_sqrs) - 1
 
 # Heuristic Function h2 that dominates h1
 def h2(state):
-    num_dirty_squares, min_distance = calc_num_of_dirty_squares_and_min_distance(state)
+    dirty_sqrs = calc_dirty_squares(state)
 
-    # The min-distance will be infinity if there are no dirty squares.
-    # So, we return zero in such case.
-    if num_dirty_squares == 0:
+    if not dirty_sqrs:
         return 0
 
+    min_dist_to_dirty_sqrs = calc_min_distance(state, dirty_sqrs)
+
+    num_dirty_sqrs = len(dirty_sqrs)
     # Penalty associated with squares left dirty after each step in addition to action of moving and cleaning.
     # penalty = d * 2 * w(S) + 2 * w(S) * ( w(S) - 1 )
-    penalty = 2 * num_dirty_squares * min_distance + 2 * num_dirty_squares * (num_dirty_squares - 1)
+    penalty = 2 * num_dirty_sqrs * min_dist_to_dirty_sqrs + 2 * num_dirty_sqrs * (num_dirty_sqrs - 1)
 
     # h2 = h1 + penalty
     return h1(state) + penalty
@@ -133,36 +149,36 @@ def a_star(initial_state, heuristic):
 
     open_set = []
 
-    # Store f(n) initially instead of storing the whole state directly
-    heapq.heappush(open_set, (0, next(counter), initial_state, [], 0, 0))
-    explored = set()
-    num_expanded = 0
+    g_value = 0
+    h_value = heuristic(initial_state)
+    f_value = g_value + h_value
 
-    # For tracking f(n) values in the optimal path
-    f_values_on_path = []
-    # For tracking states in the optimal path including initial state
-    states_on_path = [initial_state]
-    # For tracking the actions in the optimal path
-    actions_on_path = [[]]
+    heapq.heappush(
+        open_set,
+        (
+            f_value,
+            next(counter),
+            initial_state,
+            [], # array of the actions
+            g_value,
+            h_value,
+            f_value
+        )
+    )
+
+    explored_nodes = set()
+    number_of_expanded_nodes = 0
+    node_index = 0
 
     while open_set:
-        f, _, state, path, curr_cost, f_value = heapq.heappop(open_set)
+        _, _, state, path, g_value, h_value, f_value = heapq.heappop(open_set)
+
+        print(f"Node {node_index}=> \nState = {state}, \nactions = {path}, \ng(n) = {g_value}, \nh(n) = {h_value}, \nf(n) = {f_value}\n")
+        node_index += 1
 
         if goal_test(state):
-            f_values_on_path.append(f_value)
-            states_on_path.append(state)
-            actions_on_path.append(path)
-
-            print("Node: state, f(n) values, and actions that leads to the nodes in the optimal path:")
-            for i, (fn_value, node_state, actions_taken) in enumerate(zip(f_values_on_path, states_on_path, actions_on_path)):
-                print(f"Node: {i + 1}=> \nState = {node_state}, \nactions = {actions_taken}, \nf(n) value = {fn_value}")
-                print("\n")
-
             print("########################################################################")
-            print(f"Number of nodes expanded: {num_expanded}")
-
-            print("########################################################################")
-            print(f"f(n) value at the final goal state: {f}")
+            print(f"Number of nodes expanded: {number_of_expanded_nodes}")
 
             print("########################################################################")
             print("Sequence of Actions on the Optimal Path:", path)
@@ -170,23 +186,36 @@ def a_star(initial_state, heuristic):
             return path
 
         state_tuple = state_to_tuple(state)
-        if state_tuple not in explored:
-            explored.add(state_tuple)
-            num_expanded += 1
+        if state_tuple not in explored_nodes:
+            explored_nodes.add(state_tuple)
+            number_of_expanded_nodes += 1
 
             for action in actions:
                 next_state = successor_state(state, action)
                 next_state_tuple = state_to_tuple(next_state)
 
-                if next_state_tuple not in explored:
-                    new_cost = curr_cost + cost_function(next_state)
-                    next_f_value = new_cost + heuristic(next_state)
+                if next_state_tuple not in explored_nodes:
+                    num_of_dirty_sqrs = len(calc_dirty_squares(next_state))
 
-                    heapq.heappush(open_set, (next_f_value, next(counter), next_state, path + [action], new_cost, next_f_value))
+                    # g(n) = prev g(n) + (1 + 2 * remaining dirty)
+                    new_g_value = g_value + (1 + 2 * num_of_dirty_sqrs)
+                    # new h(n) value
+                    new_h_value = heuristic(next_state)
+                    # f(n) = g(n) + h(n)
+                    new_f_value = new_g_value + new_h_value
 
-                    f_values_on_path.append(next_f_value)
-                    states_on_path.append(next_state)
-                    actions_on_path.append(path + [action])
+                    heapq.heappush(
+                        open_set,
+                        (
+                            new_f_value,
+                            next(counter),
+                            next_state,
+                            path + [action],
+                            new_g_value,
+                            new_h_value,
+                            new_f_value
+                        )
+                    )
 
     return None
 
