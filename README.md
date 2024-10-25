@@ -43,22 +43,22 @@ The agent can perform the following actions:
 
 ```bash
 Choose a heuristic (h1 or h2) or type 'exit' to quit: h1
-Running A* with h1 (Admissible Heuristic):
-Node: state, f(n) values, and actions that leads to the nodes in the optimal path:
-Node: 1=> 
+Node 0=> 
 State = {'grid': ((0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (1, 1, 1, 1, 1)), 'position': (0, 0)}, 
 actions = [], 
-f(n) value = 24
+g(n) = 0, 
+h(n) = 13, 
+f(n) = 13
 
-Node: 2=> 
-State = {'grid': ((0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (1, 1, 1, 1, 1)), 'position': (0, 1)}, 
-actions = ['Right'], 
-f(n) value = 23
+Node 1=> 
+State = {'grid': ((0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (0, 0, 0, 0, 0), (1, 1, 1, 1, 1)), 'position': (1, 0)}, 
+actions = ['Up'], 
+g(n) = 11, 
+h(n) = 12, 
+f(n) = 23
 ...
 ########################################################################
 Number of nodes expanded: 65
-########################################################################
-f(n) value at the final goal state: 93
 ########################################################################
 Sequence of Actions on the Optimal Path: ['Up', 'Up', 'Up', 'Up', 'Suck', 'Right', 'Suck', 'Right', 'Suck', 'Right', 'Suck', 'Right', 'Suck']
 
