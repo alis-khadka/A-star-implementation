@@ -28,7 +28,7 @@ The agent can perform the following actions:
 - Run the A\* implementation using the following command:
 
    ```bash
-   python3 a_star.py
+   python3 Prashant_astar.py
    ```
 - It will ask input from the user.
 
